@@ -67,7 +67,7 @@
    ```
 2. Установить зависимости:
    ```bash
-   pip install fastapi uvicorn pyyaml pillow pytesseract img2table pix2tex[cli] fitz pymupdf openai requests
+   pip install -r requirements.txt
    ```
 3. (Опционально) создать виртуальное окружение:
    ```bash
@@ -204,7 +204,7 @@ class Pipeline:
 
 - **Запуск**:
   ```bash
-  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+  uvicorn app.main:app --host localhost --port 8100 --reload --timeout-keep-alive 3600
   ```
 - **Эндпойнты**:
   - `POST /api/v1/convert` — загрузка PDF, возвращает `download_url`.
