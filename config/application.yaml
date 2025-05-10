@@ -1,0 +1,31 @@
+default_tex_dir: &tex_dir "tex"
+
+downloads:
+  tex_dir: *tex_dir
+
+# TODO delete api key and proxies before commit!
+pipeline:
+  preprocessors:
+    - name: ImagePreprocessor
+      params:
+        directory: "img"
+        output_prefix: "page_"
+  stages:
+    - name: TextExtractor
+    - name: TablesExtractor
+    - name: FormulasExtractor
+      params:
+        required_symbols: ['\\', '{', '}', '_', '^']
+        math_keywords: ['\\frac', '\\sqrt', '\\sum', '\\int', '\\alpha', '\\beta']
+        cache_dir: "cache/formulas"
+    - name: AIExtractor
+      params:
+        api_key:
+        proxies:
+          http:
+          https:
+    - name: TexExporter
+      params:
+        directory: *tex_dir
+        output_prefix: "page_"
+

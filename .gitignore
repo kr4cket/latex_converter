@@ -1,0 +1,8 @@
+downloads
+tex
+.venv
+cache
+.idea
+temp
+
+.env
