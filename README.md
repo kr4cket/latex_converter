@@ -63,7 +63,7 @@
 
 1. Клонировать репозиторий:
    ```bash
-   git clone <URL> && cd <repo>
+   git clone <https://github.com/kr4cket/latex_converter> && cd <latex_converter>
    ```
 2. Установить зависимости:
    ```bash
