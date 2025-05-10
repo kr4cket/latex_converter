@@ -124,7 +124,7 @@ pipeline:
 
 1. Создайте класс, наследующий базовый `Stage`:
    ```python
-   from app.converter.pipeline.pipeline import Stage
+   from app.converter.stage.stage import Stage
    
    class CustomStage(Stage):
        def __init__(self, param1, param2):
