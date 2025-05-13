@@ -1,21 +1,16 @@
 import traceback
 
-from app.converter.pipeline.ocr.formulas import FormulasExtractor
-from app.converter.pipeline.ocr.tables import TablesExtractor
-from app.converter.pipeline.ocr.text import TextExtractor
-from app.converter.pipeline.preprocessing.images import ImagePreprocessor
-from app.converter.pipeline.preprocessing.pages import PDFPreprocessor
-from app.converter.pipeline.file.tex import TexExporter
-from app.converter.pipeline.models.openai import AIExtractor
+import yaml
 
 from app.converter.stage.stage import Stage
+from app.converter.stage.container import get_stage_class
 from pathlib import Path
-from app.converter.utils.helpers import get_file_name, create_dir
+from app.converter.utils.helpers import get_file_name, create_dir, expand_env_vars
 
 TEMP_DIR = Path("temp")
 TEMP_DIR.mkdir(exist_ok=True)
-
 FILENAME_SUFFIX = "_pages"
+
 
 class Pipeline:
     def __init__(self):
@@ -23,6 +18,28 @@ class Pipeline:
         self.stages = []
         self.preprocessors = []
         self.pages_data = {}
+        self.__config = None
+        self.__load_config()
+        self.__init_stages()
+        self.__init_preprocessors()
+
+    def __load_config(self):
+        if self.__config is None:
+            with open("config/application.yaml") as f:
+                self.__config = yaml.safe_load(f)
+        return self.__config
+
+    def __init_stages(self):
+        for stage in self.__config["pipeline"]["stages"]:
+            stage_class = get_stage_class(stage["name"])
+            params = expand_env_vars(stage.get("params", {}))
+            self.add_stage(stage_class(**params))
+
+    def __init_preprocessors(self):
+        for pp in self.__config["pipeline"]["preprocessors"]:
+            processor_class = get_stage_class(pp["name"])
+            params = expand_env_vars(pp.get("params", {}))
+            self.add_preprocessor(processor_class(**params))
 
     def set_file_path(self, file_path):
         self.file_path = file_path
@@ -61,6 +78,9 @@ class Pipeline:
         page_num = 1
         try:
             for page in self.pages_data:
+                if page_num >= 3:
+                    break
+
                 if page not in self.pages_data:
                     self.pages_data[page] = {}
                 self.pages_data[page]['number'] = page_num

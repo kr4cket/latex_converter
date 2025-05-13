@@ -26,17 +26,25 @@ class ImagePreprocessor(Stage):
             reader = PdfReader(input_pdf)
 
             for i in range(total_pages):
+                if i >= 5:
+                    break
+
+                if i <= 3:
+                    continue
+
+                pref = 0
+
                 writer = PdfWriter()
                 writer.add_page(reader.pages[i])
 
-                output_pdf = f"{directory}/{self.__output_prefix}{i + 1}.pdf"
+                output_pdf = f"{directory}/{self.__output_prefix}{pref + 1}.pdf"
                 with open(output_pdf, "wb") as out:
                     writer.write(out)
 
                 img = pdf_to_image(output_pdf)
                 img = enhance_image(img)
 
-                output_img = f"{directory}/{self.__output_prefix}{i + 1}.png"
+                output_img = f"{directory}/{self.__output_prefix}{pref + 1}.png"
                 img.save(output_img, 'PNG', quality=95, optimize=True, dpi=(600, 600))
 
                 os.remove(output_pdf)

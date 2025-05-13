@@ -10,22 +10,39 @@ pipeline:
       params:
         directory: "img"
         output_prefix: "page_"
+    - name: PDFPreprocessor
+      params:
+        directory: "pdf"
+        output_prefix: "page_"
   stages:
-    - name: TextExtractor
-    - name: TablesExtractor
+    - name: MarkerPdfTextExtractor
+      params:
+        use_llm: false
+        output_format: "json"
+        languages: "en,ru"
+        force_ocr: true
+    - name: MarkerPdfTablesExtractor
+      params:
+        use_llm: false
+        output_format: "json"
+        languages: "en,ru"
+        force_ocr: true
     - name: FormulasExtractor
       params:
-        required_symbols: ['\\', '{', '}', '_', '^']
-        math_keywords: ['\\frac', '\\sqrt', '\\sum', '\\int', '\\alpha', '\\beta']
+        required_symbols: [ '\\', '{', '}', '_', '^' ]
+        math_keywords: [ '\\frac', '\\sqrt', '\\sum', '\\int', '\\alpha', '\\beta' ]
         cache_dir: "cache/formulas"
     - name: AIExtractor
       params:
+        model: "o4-mini"
         api_key:
         proxies:
           http:
-          https:
+        text: "MarkerPdfTextExtractor"
+        tables: "MarkerPdfTablesExtractor"
+        formulas: "FormulasExtractor"
     - name: TexExporter
       params:
         directory: *tex_dir
         output_prefix: "page_"
-
+        result_data_key: "AIExtractor"

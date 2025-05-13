@@ -17,9 +17,6 @@ class FormulasExtractor(Stage):
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
 
-    def get_name(self):
-        return 'formulas'
-
     def process(self, data):
         img = Image.open(data['img'])
         img_hash = hashlib.md5(np.array(img).tobytes()).hexdigest()
