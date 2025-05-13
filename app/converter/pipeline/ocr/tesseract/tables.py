@@ -6,10 +6,7 @@ from img2table.ocr import TesseractOCR
 from app.converter.stage.stage import Stage
 
 
-class TablesExtractor(Stage):
-    def get_name(self):
-        return "tables"
-
+class TesseractTablesExtractor(Stage):
     def process(self, data):
         file = Image(src=data['img'])
         ocr = TesseractOCR(lang="rus")
@@ -19,8 +16,8 @@ class TablesExtractor(Stage):
                                          borderless_tables=True)
 
             tables_str = json.dumps([table.to_json() for table in tables],
-                     ensure_ascii=False,
-                     indent=2)
+                                    ensure_ascii=False,
+                                    indent=2)
 
         except Exception as e:
             print(f"error while extracting tables:{e}")
