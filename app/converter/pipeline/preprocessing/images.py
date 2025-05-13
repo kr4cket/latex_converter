@@ -26,18 +26,10 @@ class ImagePreprocessor(Stage):
             reader = PdfReader(input_pdf)
 
             for i in range(total_pages):
-                if i >= 5:
-                    break
-
-                if i <= 3:
-                    continue
-
-                pref = 0
-
                 writer = PdfWriter()
                 writer.add_page(reader.pages[i])
 
-                output_pdf = f"{directory}/{self.__output_prefix}{pref + 1}.pdf"
+                output_pdf = f"{directory}/{self.__output_prefix}{i + 1}.pdf"
                 with open(output_pdf, "wb") as out:
                     writer.write(out)
 

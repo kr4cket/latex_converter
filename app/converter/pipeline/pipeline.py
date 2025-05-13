@@ -78,9 +78,6 @@ class Pipeline:
         page_num = 1
         try:
             for page in self.pages_data:
-                if page_num >= 3:
-                    break
-
                 if page not in self.pages_data:
                     self.pages_data[page] = {}
                 self.pages_data[page]['number'] = page_num

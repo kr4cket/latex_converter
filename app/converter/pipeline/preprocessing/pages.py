@@ -47,18 +47,10 @@ def split_pdf_by_pages(input_pdf, filename, output_prefix="page_") -> list:
         reader = PdfReader(input_pdf)
 
         for i in range(total_pages):
-            if i >= 5:
-                break
-
-            if i <= 3:
-                continue
-
-            pref = 0
-
             writer = PdfWriter()
             writer.add_page(reader.pages[i])
 
-            output_filename = f"../../../temp/{filename}/pdf/{output_prefix}{pref + 1}.pdf"
+            output_filename = f"../../../temp/{filename}/pdf/{output_prefix}{i + 1}.pdf"
             with open(output_filename, "wb") as out:
                 writer.write(out)
             pages.append(output_filename)
