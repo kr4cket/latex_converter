@@ -62,8 +62,8 @@
 
 1. **Клонируйте репозиторий** и перейдите в папку:
    ```bash
-   git clone <repo-url>
-   cd <repo-directory>
+   git clone https://github.com/kr4cket/latex_converter
+   cd latex_converter
     ```
 
 2. **Создайте виртуальное окружение** (Python 3.10+ желательно):
