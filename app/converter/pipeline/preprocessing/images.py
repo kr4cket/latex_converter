@@ -36,7 +36,7 @@ class ImagePreprocessor(Stage):
                 img = pdf_to_image(output_pdf)
                 img = enhance_image(img)
 
-                output_img = f"{directory}/{self.__output_prefix}{pref + 1}.png"
+                output_img = f"{directory}/{self.__output_prefix}{i + 1}.png"
                 img.save(output_img, 'PNG', quality=95, optimize=True, dpi=(600, 600))
 
                 os.remove(output_pdf)
