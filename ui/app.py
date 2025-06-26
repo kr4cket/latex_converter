@@ -82,7 +82,7 @@ st.set_page_config(layout="wide")
 st_autorefresh(interval=30_000, key="auto_refresh")
 
 
-API_BASE = os.environ.get("STREAMLIT_API_BASE_URL", "http://localhost:8080/api/v1")
+API_BASE = os.environ.get("API_BASE_URL")
 
 # ——————————————
 # Простые функции для API (без кеша!)
