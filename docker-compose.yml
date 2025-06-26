@@ -94,7 +94,7 @@ services:
     command: >
       celery -A app.infra.queue.app worker
       --loglevel=info
-      --concurrency=4
+      --concurrency=1
     depends_on:
       - postgres
       - redis

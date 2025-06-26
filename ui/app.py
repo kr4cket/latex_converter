@@ -6,19 +6,6 @@ import st_file_uploader as stf
 from streamlit_autorefresh import st_autorefresh
 import streamlit_authenticator as stauth
 
-st.markdown(
-    """
-    <style>
-    .block-container {
-        max-width: 70%;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 password = os.environ.get("STREAMLIT_PASS", "admin")
 env_key = os.environ.get("STREAMLIT_KEY", "some_random_key_string")
 
