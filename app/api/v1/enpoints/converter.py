@@ -1,61 +1,127 @@
-from fastapi import APIRouter
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import FileResponse
-from fastapi.responses import JSONResponse
-import os
-from pathlib import Path
 import uuid
+from pathlib import Path
+from typing import Literal, List, Optional
 
-from app.converter.service import Converter, service
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status, Query
+from fastapi.responses import JSONResponse, FileResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.converter.service import get_download_path
+from app.infra.database.database import Database
+from app.infra.database.models import Conversions, StatusEnum
+from app.infra.queue.tasks import convert_pdf_task
 
 router = APIRouter()
-
 TEMP_DIR = Path("temp")
 TEMP_DIR.mkdir(exist_ok=True)
 
+async def get_db() -> AsyncSession:
+    async with Database().get_session() as session:
+        yield session
 
-@router.post("/convert")
-async def convert_file(file: UploadFile = File(...)):
-    try:
-        file_id = uuid.uuid4()
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{file_id}{file_extension}"
-        file_path = TEMP_DIR / unique_filename
+@router.post("/convert", status_code=status.HTTP_202_ACCEPTED)
+async def enqueue_convert(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    file_id   = str(uuid.uuid4())
+    ext       = Path(file.filename).suffix
+    out_path  = TEMP_DIR / f"{file_id}{ext}"
+    content   = await file.read()
+    out_path.write_bytes(content)
 
-        with open(file_path, "wb") as buffer:
-            content = await file.read()
-            buffer.write(content)
+    conv = Conversions(
+        file_id   = file_id,
+        file_name = file.filename,
+        status    = StatusEnum.pending,
+    )
+    db.add(conv)
+    await db.commit()
+    await db.refresh(conv)
 
-        # TODO: вынести в очередь задач!
-        service.convert_pdf(file_path)
-        service.save(file_path, file_id)
-        service.cleanup(file_path, file_extension)
+    convert_pdf_task.delay(conv.id, str(out_path), file_id)
 
-        file_info = {
-            "description": "Data converted!",
-            "download_url": router.url_path_for("download_pdf", file_id=file_id)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={
+            "message":    "Задача поставлена в очередь",
+            "task_id":    file_id,
+            "status_url": router.url_path_for("get_status", file_id=file_id),
+        },
+    )
+
+@router.get("/convert/status/{file_id}", name="get_status")
+async def get_status(
+    file_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    q = await db.execute(select(Conversions).where(Conversions.file_id == file_id))
+    conv = q.scalars().first()
+    if not conv:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+
+    resp = {
+        "file_id":    conv.file_id,
+        "status":     conv.status.value,
+        "created_at": conv.created_at.isoformat(),
+    }
+    if conv.status == StatusEnum.completed:
+        resp["download_url"] = conv.download_url
+    elif conv.status == StatusEnum.failed:
+        resp["error"] = conv.error
+    return resp
+
+@router.get("/download/{file_id}", name="download")
+async def download(
+    file_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    q = await db.execute(select(Conversions).where(Conversions.file_id == file_id))
+    conv = q.scalars().first()
+    if not conv or conv.status != StatusEnum.completed:
+        raise HTTPException(status_code=404, detail="Файл не готов")
+    path = get_download_path(file_id)
+    return FileResponse(
+        path=path,
+        filename=f"{conv.file_id}.zip",
+        media_type="application/zip"
+    )
+
+
+@router.get("/convert", name="list_conversions")
+async def list_conversions(
+    status: Literal["all", "pending", "processing", "completed", "failed"] = Query(
+        "all", description="Фильтрация по статусу"
+    ),
+    file_name: Optional[str] = Query(
+        None, description="Фильтрация по части имени файла (case-insensitive)"
+    ),
+    db: AsyncSession = Depends(get_db),
+):
+    query = select(Conversions)
+
+    if status != "all":
+        try:
+            status_enum = StatusEnum[status]
+        except KeyError:
+            raise HTTPException(status_code=400, detail="Некорректный статус")
+        query = query.where(Conversions.status == status_enum)
+
+    if file_name:
+        query = query.where(Conversions.file_name.ilike(f"%{file_name}%"))
+
+    result = await db.execute(query)
+    conversions: List[Conversions] = result.scalars().all()
+
+    return [
+        {
+            "file_id":      conv.file_id,
+            "file_name":    conv.file_name,
+            "status":       conv.status.value,
+            "created_at":   conv.created_at.isoformat(),
+            "download_url": conv.download_url if conv.status == StatusEnum.completed else None,
+            "error":        conv.error if conv.status == StatusEnum.failed else None,
         }
-        return JSONResponse(status_code=201, content=file_info)
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error converting file: {e}"
-        )
-
-
-@router.get("/convert/{file_id}")
-async def download_pdf(file_id: str):
-    try:
-        path = service.get_download_path(file_id)
-        return FileResponse(
-            path=path,
-            filename=f"converted_data.zip",
-            media_type="application/zip"
-        )
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error uploading file: {e}"
-        )
+        for conv in conversions
+    ]

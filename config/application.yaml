@@ -3,7 +3,6 @@ default_tex_dir: &tex_dir "tex"
 downloads:
   tex_dir: *tex_dir
 
-# TODO delete api key and proxies before commit!
 pipeline:
   preprocessors:
     - name: ImagePreprocessor
@@ -17,16 +16,16 @@ pipeline:
   stages:
     - name: MarkerPdfTextExtractor
       params:
-        use_llm: false
         output_format: "json"
         languages: "en,ru"
         force_ocr: true
+        format_lines: true
     - name: MarkerPdfTablesExtractor
       params:
-        use_llm: false
         output_format: "json"
         languages: "en,ru"
         force_ocr: true
+        format_lines: true
     - name: FormulasExtractor
       params:
         required_symbols: [ '\\', '{', '}', '_', '^' ]

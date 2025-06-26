@@ -6,6 +6,7 @@ from app.converter.stage.stage import Stage
 from app.converter.stage.container import get_stage_class
 from pathlib import Path
 from app.converter.utils.helpers import get_file_name, create_dir, expand_env_vars
+from definitions import CONFIGURATION_PATH
 
 TEMP_DIR = Path("temp")
 TEMP_DIR.mkdir(exist_ok=True)
@@ -25,7 +26,7 @@ class Pipeline:
 
     def __load_config(self):
         if self.__config is None:
-            with open("config/application.yaml") as f:
+            with open(CONFIGURATION_PATH) as f:
                 self.__config = yaml.safe_load(f)
         return self.__config
 

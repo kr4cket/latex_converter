@@ -1,9 +1,9 @@
 import io
 import json
 import os
-import httpx
+
 import requests
-from openai import OpenAI, DefaultHttpxClient
+from openai import OpenAI
 import base64
 
 from reportlab.lib.pagesizes import letter
@@ -11,30 +11,24 @@ from reportlab.pdfgen import canvas
 
 from app.converter.stage.stage import Stage
 from app.converter.utils.helpers import delete_latex_md
-from definitions import PROMPT_PATH
 
 
-class AIExtractor(Stage):
-    def __init__(self, api_key: str, proxies: dict[str:str], model: str = "gpt-4o", text: str = "", tables: str = "",
-                 formulas: str = "", base_url: str | None = None):
+class QWENExtractor(Stage):
+    def __init__(self, api_key: str, proxies: dict[str:str], model: str = "", text: str = "", tables: str = "",
+                 formulas: str = "", base_url=""):
         key = os.path.expandvars(api_key)
-        self.client = OpenAI(api_key=key, http_client=requests.Session().proxies.update(proxies))
+        self.client = OpenAI(base_url=base_url, api_key=key, http_client=requests.Session().proxies.update(proxies))
         self.model = model
         self.extracted_text_key = text
         self.extracted_tables_key = tables
         self.extracted_formulas_key = formulas
 
-        print("all good")
-
     def process(self, data):
         with open(data['img'], "rb") as image_file:
             base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
-        uploaded_files = self.upload_files(data)
+        # uploaded_files = self.upload_files(data)
         prompt_text = self.get_text_prompt()
-
-        print(prompt_text)
-
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -48,18 +42,6 @@ class AIExtractor(Stage):
                         {
                             "type": "image_url",
                             "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}
-                        },
-                        {
-                            "type": "file",
-                            "file": {"file_id": uploaded_files["ocr_text.pdf"]}
-                        },
-                        {
-                            "type": "file",
-                            "file": {"file_id": uploaded_files["ocr_tables.pdf"]}
-                        },
-                        {
-                            "type": "file",
-                            "file": {"file_id": uploaded_files["ocr_formulas.pdf"]}
                         },
                     ],
                 }
@@ -75,19 +57,20 @@ class AIExtractor(Stage):
             ("ocr_formulas.pdf", self.json_to_pdf_bytes(data[self.extracted_formulas_key])),
         ]
 
+        print("good")
         uploaded = {}
         for filename, content_bytes in files_data:
             buf = io.BytesIO(content_bytes)
             f = self.client.files.create(
                 file=(filename, buf),
-                purpose="assistants"
+                purpose="file-extract"
             )
             uploaded[filename] = f.id
         return uploaded
 
     def get_text_prompt(self):
         try:
-            with open(f"{PROMPT_PATH}/{self.model}.txt", encoding="utf-8") as f:
+            with open(f"config/prompts/{self.model}.txt", encoding="utf-8") as f:
                 prompt_text = f.read()
                 return prompt_text
         except FileNotFoundError:
