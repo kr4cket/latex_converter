@@ -19,7 +19,6 @@ RUN apt-get update && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -U pip \
  && pip install --no-cache-dir -r requirements.txt
- 
 
 COPY definitions.py .
 COPY config/ config
