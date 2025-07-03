@@ -38,8 +38,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:?error}
       POSTGRES_USER: ${POSTGRES_USER:?error}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?error}
-    # ports:
-    #   - "5432:5432"
+    ports:
+       - "5432:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
@@ -54,8 +54,8 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
-    # ports:
-    #   - "6379:6379"
+    ports:
+       - "6379:6379"
     profiles: ["deploy"]
     networks:
       - backend
@@ -74,8 +74,8 @@ services:
     depends_on:
       - postgres
       - redis
-    # ports:
-    #   - "8000:8000"
+    ports:
+       - "8000:8000"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -105,7 +105,7 @@ services:
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
       CELERY_BROKER_URL: redis://redis:6379/0
-      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
     networks:
       - backend
 

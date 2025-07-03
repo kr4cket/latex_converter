@@ -1,3 +1,4 @@
+import os
 import uuid
 from pathlib import Path
 from typing import Literal, List, Optional
@@ -6,11 +7,11 @@ from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status,
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from celery import Celery
 
 from app.converter.service import get_download_path
 from app.infra.database.database import Database
 from app.infra.database.models import Conversions, StatusEnum
-from app.infra.queue.tasks import convert_pdf_task
 
 router = APIRouter()
 TEMP_DIR = Path("temp")
@@ -19,6 +20,12 @@ TEMP_DIR.mkdir(exist_ok=True)
 async def get_db() -> AsyncSession:
     async with Database().get_session() as session:
         yield session
+
+celery_client = Celery (
+    "conversion_client",
+    broker=os.getenv("CELERY_BROKER_URL", "redis://redis:6379/0"),
+    backend=os.getenv("CELERY_RESULT_BACKEND", "redis://redis:6379/1"),
+)
 
 @router.post("/convert", status_code=status.HTTP_202_ACCEPTED)
 async def enqueue_convert(
@@ -40,7 +47,10 @@ async def enqueue_convert(
     await db.commit()
     await db.refresh(conv)
 
-    convert_pdf_task.delay(conv.id, str(out_path), file_id)
+    celery_client.send_task(
+        name="convert_pdf_task",
+        args=[conv.id, str(out_path), file_id],
+    )
 
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
