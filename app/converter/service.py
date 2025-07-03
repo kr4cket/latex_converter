@@ -5,9 +5,7 @@ import yaml
 from app.converter.pipeline.pipeline import Pipeline, TEMP_DIR, FILENAME_SUFFIX
 from app.converter.utils.helpers import get_file_name, zip_directory, delete_temp_files
 from definitions import CONFIGURATION_PATH
-from surya.recognition.model.config import SuryaOCRConfig
 
-SuryaOCRConfig.has_no_defaults_at_init = True
 
 CFG_DIR = Path("config")
 

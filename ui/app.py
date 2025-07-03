@@ -6,19 +6,6 @@ import st_file_uploader as stf
 from streamlit_autorefresh import st_autorefresh
 import streamlit_authenticator as stauth
 
-st.markdown(
-    """
-    <style>
-    .block-container {
-        max-width: 70%;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
 password = os.environ.get("STREAMLIT_PASS", "admin")
 env_key = os.environ.get("STREAMLIT_KEY", "some_random_key_string")
 
@@ -82,7 +69,7 @@ st.set_page_config(layout="wide")
 st_autorefresh(interval=30_000, key="auto_refresh")
 
 
-API_BASE = os.environ.get("STREAMLIT_API_BASE_URL", "http://localhost:8080/api/v1")
+API_BASE = os.environ.get("API_BASE_URL")
 
 # ——————————————
 # Простые функции для API (без кеша!)
